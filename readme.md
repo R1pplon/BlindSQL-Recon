@@ -85,12 +85,6 @@
 
 Python 3.x
 
-可以通过 `pip` 安装所需的库：
-
-```bash
-pip install -r requirements.txt
-```
-
 ### 运行管道
 
 1. 克隆或下载包含管道脚本的仓库。
