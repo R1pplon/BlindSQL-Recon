@@ -20,7 +20,7 @@ def generate_report(data):
 
     # 控制台报告
     print("\n" + "="*60)
-    print("SQL时间盲注攻击分析报告")
+    print("SQL盲注攻击分析报告")
     print("="*60)
 
     if report['database']:
