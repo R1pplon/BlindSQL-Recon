@@ -15,6 +15,8 @@
 
 **具体问题具体分析**
 
+该项目目前仅提供大致框架，具体需求请自行修改脚本。
+
 * **可自定义工作流**：管道由五个阶段组成，每个阶段有一个独立的脚本。用户可以轻松地替换或修改这些阶段以适应不同的需求：
 
   * **日志解析器**：默认解析 Apache 日志，但可以将其替换为 Nginx 日志解析器等自定义解析器。
@@ -122,6 +124,122 @@ sh analyze.sh /path/to/logfile key_param
 
 ```bash
 ./analyze.bat ./log_example/access.log query
+
+```
+
+```
+============================================================
+SQL时间盲注攻击分析报告
+============================================================
+
+[+] 目标数据库: INFORMATION_SCHEMA
+
+[+] 被攻击的表:
+    - SCHEMATA
+    - TABLES
+    - COLUMNS
+    - BUS_DRIVERS
+
+[+] 发现的列结构:
+    INFORMATION_SCHEMA.SCHEMATA:
+      - SCHEMA_NAME
+    INFORMATION_SCHEMA.TABLES:
+      - TABLE_NAME
+    INFORMATION_SCHEMA.COLUMNS:
+      - COLUMN_NAME
+    BUS_SYSTEM.BUS_DRIVERS:
+      - EMPLOYEE_ID
+      - FULL_NAME
+      - PASSWORD
+      - USERNAME
+
+[+] 表 SCHEMATA.SCHEMA_NAME 中被盗数据:
+    记录 1: information_schema
+    记录 2: bus_system
+
+[+] 表 TABLES.TABLE_NAME 中被盗数据:
+    记录 1: bus_drivers
+    记录 2: news
+    记录 3: stops
+    记录 4: routes
+    记录 5: lost_items
+    记录 6: route_stops
+
+[+] 表 COLUMNS.COLUMN_NAME 中被盗数据:
+    记录 1: id
+    记录 2: eipleyee_id
+    记录 3: full_name
+    记录 4: username
+    记录 5: ass
+    记录 6: register_date
+
+[+] 表 BUS_DRIVERS.EMPLOYEE_ID 中被盗数据:
+    记录 1: BJ2024007
+    记录 2: BJ2024005
+    记录 3: BJ2024016
+    记录 4: BJ2024011
+    记录 5: BJ2024018
+    记录 6: BJ2024014
+    记录 7: BJ2024013
+    记录 8: BJ2024017
+    记录 9: BJ2024002
+    记录 10: BJ2024015
+    记录 11: BJ2024004
+    记录 12: BJ2024010
+    记录 13: BJ2024020
+    记录 14: BJ2024019
+    记录 15: BJ2024012
+    记录 16: BJ2024009
+    记录 17: BJ2024003
+    记录 18: BJ2024001
+    记录 19: BJ2024006
+    记录 20: BJ2024008
+
+[+] 表 BUS_DRIVERS.PASSWORD 中被盗数据:
+    记录 1: 888888
+    记录 2: Ch@19980808
+    记录 3: cy1988
+    记录 4: fengjuan88
+    记录 5: gx_fly
+    记录 6: hmm123456
+    记录 7: JX777
+    记录 8: kongli000
+    记录 9: Lina_666
+    记录 10: luyuan@bj
+    记录 11: minmin99
+    记录 12: password
+    记录 13: sgd@top
+    记录 14: tianmi_sweet
+    记录 15: weiping
+    记录 16: wJ_1995
+    记录 17: wq2024
+    记录 18: zhangwei123
+    记录 19: zhaolei_01
+    记录 20: zhoupeng2023
+
+[+] 表 BUS_DRIVERS.USERNAME 中被盗数据:
+    记录 1: sunyue
+    记录 2: chenhao
+    记录 3: changyuan
+    记录 4: fengjuan
+    记录 5: gaoxiang
+    记录 6: hanmeimei
+    记录 7: jiangxin
+    记录 8: kongli
+    记录 9: lina
+    记录 10: luyuan
+    记录 11: liumin
+    记录 12: zhengfei
+    记录 13: shigandang
+    记录 14: tianmi
+    记录 15: weiping
+    记录 16: wujing
+    记录 17: wangqiang
+    记录 18: zhangwei
+    记录 19: zhaolei
+    记录 20: zhoupeng
+
+[+] 详细报告已保存到 ./result/sql_injection_report_20250825_135409.json
 ```
 
 ---
