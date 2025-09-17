@@ -18,17 +18,17 @@ def analyze_payload(payload, response_size):
         'position': 0,
         'ascii_value': 0,
         'limit_offset': 0,
-        'sleep_triggered': False,
+        'judge': False,
         'comparison_operator': '>',
         'record_id': 0
     }
 
     # 检测睡眠触发
-    analysis['sleep_triggered'] = response_size < 1406
+    analysis['judge'] = response_size < 1406
 
     # SQLMap特有的时间盲注模式
     if payload and 'SLEEP(1-(IF(' in payload.upper():
-        analysis['type'] = 'time_blind_injection'
+        analysis['type'] = 'blind_injection'
         payload = payload.upper()
 
         # 提取数据库、表、列等信息

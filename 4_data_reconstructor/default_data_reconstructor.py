@@ -18,21 +18,21 @@ def reconstruct_character(comparisons):
 
     for comp in sorted(comparisons, key=lambda x: x['ascii_value']):
         ascii_val = comp['ascii_value']
-        sleep_triggered = comp['sleep_triggered']
+        judge = comp['judge']
         operator = comp.get('comparison_operator', '>')
 
         if operator == '!=':
-            if sleep_triggered:
+            if judge:
                 return ascii_val
             continue
             
         if operator == '>':
-            if sleep_triggered:
+            if judge:
                 max_val = min(max_val, ascii_val)
             else:
                 min_val = max(min_val, ascii_val + 1)
         elif operator == '<':
-            if sleep_triggered:
+            if judge:
                 min_val = max(min_val, ascii_val)
             else:
                 max_val = min(max_val, ascii_val - 1)
@@ -60,7 +60,7 @@ def main():
     data_extractions = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(list))))
 
     for analysis in payload_analyses:
-        if analysis['type'] == 'time_blind_injection' and analysis['table'] and analysis['column']:
+        if analysis['type'] == 'blind_injection' and analysis['table'] and analysis['column']:
             if not results['database'] and analysis['database']:
                 results['database'] = analysis['database']
 
@@ -83,7 +83,7 @@ def main():
 
                 data_extractions[table_key][column][record_id][position].append({
                     'ascii_value': analysis['ascii_value'],
-                    'sleep_triggered': analysis['sleep_triggered'],
+                    'judge': analysis['judge'],
                     'comparison_operator': analysis['comparison_operator']
                 })
 
