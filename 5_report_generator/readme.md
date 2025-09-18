@@ -12,11 +12,6 @@
 - 为每个被攻击的表生成单独的 CSV 文件
 - 自动创建输出目录并组织报告文件
 
-## 安装要求
-
-- Python 3.6+
-- 无需额外依赖（仅使用标准库）
-
 ## 使用方法
 
 ### 基本用法
@@ -224,6 +219,7 @@ SQL盲注攻击分析报告
 ### CSV 报告示例
 
 **metadata.csv**:
+
 ```csv
 Database,app_db
 Analysis Time,2023-09-18T14:30:22.123456
@@ -234,6 +230,7 @@ products
 ```
 
 **users.csv**:
+
 ```csv
 username,password,email
 admin,5f4dcc3b5aa765d61d8327deb882cf99,admin@example.com

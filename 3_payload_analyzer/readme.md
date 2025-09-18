@@ -56,18 +56,21 @@ cat input.jsonl | python sqlmap_analyzer.py --config config.json
 配置文件采用JSON格式，用于定义分析器的行为和识别模式。以下是配置文件中各字段的详细说明：
 
 ### 1. injection_type
+
 - **类型**: 字符串
 - **说明**: 指定注入类型，用于标识分析结果中的类型字段
 - **示例**: `"boolean"` 或 `"time"`
 
 ### 2. trigger_pattern
+
 - **类型**: 字符串
 - **说明**: 用于识别payload是否为特定类型盲注的关键模式（不区分大小写）
-- **示例**: 
+- **示例**:
   - 布尔盲注: `"ORD(MID("`
   - 时间盲注: `"SLEEP(1-(IF("`
 
 ### 3. judge_function
+
 - **类型**: 对象
 - **说明**: 定义如何根据响应大小判断条件真假
 - **子字段**:
@@ -88,7 +91,7 @@ cat input.jsonl | python sqlmap_analyzer.py --config config.json
   "value": 15
 }
 
-// 时间盲注：响应大小小于1406表示条件为真（因为睡眠函数执行导致响应较小）
+// 时间盲注：响应大小小于1406表示条件为真
 "judge_function": {
   "type": "size_less",
   "value": 1406
@@ -103,6 +106,7 @@ cat input.jsonl | python sqlmap_analyzer.py --config config.json
 ```
 
 ### 4. patterns
+
 - **类型**: 对象
 - **说明**: 包含多个正则表达式模式，用于从payload中提取特定信息
 - **子字段**:
@@ -117,7 +121,7 @@ cat input.jsonl | python sqlmap_analyzer.py --config config.json
 1. **from_pattern**
    - **用途**: 提取数据库名和表名
    - **格式**: `FROM\s+([\w_]+)\.([\w_]+)`
-   - **捕获组**: 
+   - **捕获组**:
      - 第1组: 数据库名
      - 第2组: 表名
    - **示例**: 从`FROM information_schema.tables`中提取:
@@ -127,28 +131,28 @@ cat input.jsonl | python sqlmap_analyzer.py --config config.json
 2. **cast_pattern**
    - **用途**: 提取列名
    - **格式**: `CAST\(([\w_]+)\s+AS`
-   - **捕获组**: 
+   - **捕获组**:
      - 第1组: 列名
    - **示例**: 从`CAST(password AS`中提取列名`password`
 
 3. **limit_pattern**
    - **用途**: 提取LIMIT子句中的偏移量（记录索引）
    - **格式**: `LIMIT\s+(\d+),1`
-   - **捕获组**: 
+   - **捕获组**:
      - 第1组: 偏移量（整数）
    - **示例**: 从`LIMIT 5,1`中提取偏移量`5`
 
 4. **position_pattern**
    - **用途**: 提取字符位置（第几个字符）
    - **格式**: `,(\d+),1\)\)`
-   - **捕获组**: 
+   - **捕获组**:
      - 第1组: 字符位置（整数）
    - **示例**: 从`,3,1))`中提取位置`3`
 
 5. **comparison_pattern**
    - **用途**: 提取比较运算符和比较的ASCII值
    - **格式**: `\)\)\s*([<>!]=?)\s*(\d+)`
-   - **捕获组**: 
+   - **捕获组**:
      - 第1组: 比较运算符（如`>`, `<`, `>=`, `!=`等）
      - 第2组: 比较的ASCII值（整数）
    - **示例**: 从`))>97`中提取:
@@ -160,12 +164,14 @@ cat input.jsonl | python sqlmap_analyzer.py --config config.json
 ### 步骤1: 确定注入类型
 
 根据要分析的盲注类型设置`injection_type`:
+
 - 布尔盲注: `"boolean"`
 - 时间盲注: `"time"`
 
 ### 步骤2: 设置触发模式
 
 分析payload样本，找出能够唯一标识该类型注入的模式:
+
 ```json
 "trigger_pattern": "ORD(MID("  // 布尔盲注
 "trigger_pattern": "SLEEP(1-(IF("  // 时间盲注
@@ -174,6 +180,7 @@ cat input.jsonl | python sqlmap_analyzer.py --config config.json
 ### 步骤3: 配置判断函数
 
 根据响应特征设置判断条件:
+
 ```json
 // 布尔盲注：条件为真时响应大小固定
 "judge_function": {
@@ -181,7 +188,7 @@ cat input.jsonl | python sqlmap_analyzer.py --config config.json
   "value": 15
 }
 
-// 时间盲注：条件为真时响应较小（因为执行了睡眠函数）
+// 时间盲注：条件为真时响应较小
 "judge_function": {
   "type": "size_less",
   "value": 1406
@@ -191,6 +198,7 @@ cat input.jsonl | python sqlmap_analyzer.py --config config.json
 ### 步骤4: 定义提取模式
 
 根据payload结构编写正则表达式模式:
+
 ```json
 "patterns": {
   "from_pattern": "FROM\\s+([\\w_]+)\\.([\\w_]+)",
@@ -204,6 +212,7 @@ cat input.jsonl | python sqlmap_analyzer.py --config config.json
 ### 完整配置示例
 
 #### 布尔盲注配置
+
 ```json
 {
   "injection_type": "boolean",
@@ -223,6 +232,7 @@ cat input.jsonl | python sqlmap_analyzer.py --config config.json
 ```
 
 #### 时间盲注配置
+
 ```json
 {
   "injection_type": "time",
@@ -265,6 +275,7 @@ cat input.jsonl | python sqlmap_analyzer.py --config config.json
 ## 故障排除
 
 如果分析结果不符合预期，请检查:
+
 1. 触发模式是否匹配payload
 2. 正则表达式是否能正确提取信息
 3. 判断函数的类型和值是否设置正确
