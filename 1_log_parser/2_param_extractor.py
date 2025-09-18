@@ -41,11 +41,17 @@ def extract_parameter(log_data, key_param):
 def main():
     parser = argparse.ArgumentParser(description='参数提取器', add_help=False)
     parser.add_argument('-p', '--param', required=True, help='关键参数名')
+    parser.add_argument('-k', '--key', help='关键词过滤（可选）')
     parser.add_argument('-h', '--help', action='help', help='显示帮助信息')
     
     args = parser.parse_args()
     
     for line in sys.stdin:
+
+        # 关键词过滤：如果提供了-k参数且关键词不在行中，则跳过
+        if args.key and args.key not in line:
+            continue
+
         try:
             log_data = json.loads(line)
             result = extract_parameter(log_data, args.param)
