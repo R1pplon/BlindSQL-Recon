@@ -1,0 +1,15 @@
+{
+  "injection_type": "time",
+  "trigger_pattern": "SLEEP(1-(IF(",
+  "judge_function": {
+    "type": "size_less",
+    "value": 1406
+  },
+  "patterns": {
+    "from_pattern": "FROM\\s+([\\w_]+)\\.([\\w_]+)",
+    "cast_pattern": "CAST\\(([\\w_]+)\\s+AS",
+    "limit_pattern": "LIMIT\\s+(\\d+),1",
+    "position_pattern": ",(\\d+),1\\)\\)",
+    "comparison_pattern": "\\)\\)\\s*([<>!]=?)\\s*(\\d+)"
+  }
+}

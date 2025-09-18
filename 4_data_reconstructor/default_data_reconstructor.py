@@ -60,7 +60,7 @@ def main():
     data_extractions = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(list))))
 
     for analysis in payload_analyses:
-        if analysis['type'] == 'blind_injection' and analysis['table'] and analysis['column']:
+        if "inject" in analysis['type'] and analysis['table'] and analysis['column']:
             if not results['database'] and analysis['database']:
                 results['database'] = analysis['database']
 

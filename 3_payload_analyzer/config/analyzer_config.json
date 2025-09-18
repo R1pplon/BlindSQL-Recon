@@ -1,0 +1,17 @@
+{
+  "injection_type": "",
+  "trigger_pattern": "",
+  "judge_function": {
+    "type": "",
+    "value": 15,
+    "max": -1,
+    "min": -1
+  },
+  "patterns": {
+    "from_pattern": "",
+    "cast_pattern": "",
+    "limit_pattern": "",
+    "position_pattern": "",
+    "comparison_pattern": ""
+  }
+}
