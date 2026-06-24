@@ -12,7 +12,7 @@
 
 - 对请求中的 payload 字段执行 Base64 解码
 - 尝试将解码结果转换为 UTF-8 字符串
-- 处理失败时保留原始 payload 值
+- 处理失败时保留原始字符串
 
 **使用方法**：
 
@@ -25,7 +25,7 @@ cat input.json | python3 base64_decoder.py
 **功能**：
 
 - 对请求中的 payload 字段执行 URL 解码（使用 urllib.parse.unquote）
-- 处理失败时保留原始 payload 值
+- 处理失败时保留原始字符串
 
 **使用方法**：
 

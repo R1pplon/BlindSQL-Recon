@@ -31,15 +31,21 @@
 ├─1_log_parser/          # 日志解析模块
 │  ├─1_web_log_parser.py     # Web日志格式解析
 │  ├─2_param_detector.py     # AI参数检测器（LLM自动识别注入参数）
-│  ├─3_param_extractor.py    # 参数提取（支持AI自动检测）
+│  └─3_param_extractor.py    # 参数提取（支持AI自动检测）
 ├─2_payload_decoder/     # 载荷解码模块
+│  ├─url_decoder.py          # URL解码
+│  └─base64_decoder.py       # Base64解码（可选，时间盲注常用）
 ├─3_payload_analyzer/    # 载荷分析模块
 │  ├─ai_config_generator.py  # AI配置生成器（LLM自动生成分析器配置）
 │  ├─sqlmap_analyzer.py      # SQLMap盲注分析器
-│  └─config/                 # 分析配置文件
+│  └─config/                 # 预置及AI生成的配置文件
 ├─4_data_reconstructor/  # 数据重构模块
+│  └─default_data_reconstructor.py  # 二分法字符重构
 ├─5_report_generator/    # 报告生成模块
+│  └─default_report_generator.py    # 多格式报告输出
 └─log_example/           # 示例日志文件
+   ├─bool_access.log           # 布尔盲注示例
+   └─time_access.log           # 时间盲注示例
 ```
 
 ## 安装与依赖
@@ -64,7 +70,7 @@ pip install pyyaml openai
 DEEPSEEK_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
-支持所有与 OpenAI SDK 兼容的 API（DeepSeek、OpenAI 等），可在 `2_param_detector.py:86` 修改 `base_url` 和 `model`。
+支持所有与 OpenAI SDK 兼容的 API（DeepSeek、OpenAI 等），可在 `2_param_detector.py` 修改 `base_url` 和 `model`。
 
 ### 获取项目
 

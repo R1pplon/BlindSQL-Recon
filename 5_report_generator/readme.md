@@ -35,7 +35,7 @@ python 1_web_log_parser.py | \
 python 3_param_extractor.py -p query | \
 python url_decoder.py | \
 python base64_decoder.py | \
-python sqlmap_analyzer.py --config config.json | \
+python sqlmap_analyzer.py --config config.yaml | \
 python default_data_reconstructor.py | \
 python default_report_generator.py -o all
 ```

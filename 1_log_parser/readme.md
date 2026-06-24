@@ -2,7 +2,7 @@
 
 ## 概述
 
-本工具集包含三个独立的 Python 脚本，用于处理和解析 Web 服务器日志。第一个工具解析原始日志文件，第二个工具通过 AI 自动识别注入参数或从解析后的日志中提取特定参数，第三个工具使用 LLM 智能检测注入参数名。
+本工具集包含三个独立的 Python 脚本，按管线顺序串联使用。第一个工具解析原始日志文件为结构化 JSON，第二个工具通过 LLM 自动识别携带 SQL 注入 payload 的 URL 参数名，第三个工具根据识别的参数名提取 payload 值。
 
 ## Web 日志解析器 `1_web_log_parser.py`
 
@@ -57,6 +57,56 @@ cat access.log | grep "GET" | python3 1_web_log_parser.py
 3. 将匹配的字段映射到结构化 JSON 对象
 4. 无法解析的行将被忽略
 
+## AI 参数检测器 `2_param_detector.py`
+
+### 功能
+
+通过 LLM（DeepSeek）自动识别日志中携带 SQL 注入 payload 的 URL 参数名，消除手动指定 `-p` 参数的需要。
+
+### 工作流程
+
+1. 全量读入 JSON 行数据
+2. 随机采样 100 条（可通过 `-n` 调整）
+3. 按 URL 路径聚合参数名及取值
+4. 构造 YAML 格式采样数据发送给 LLM
+5. LLM 返回注入参数名
+6. 输出元数据行 `{"__param_detect__": "param_name"}` + 透传全量数据
+
+### 输入格式
+
+- JSON 行格式的日志数据（1_web_log_parser.py 的输出）
+- 通过标准输入流(stdin)接收数据
+
+### 输出格式
+
+```
+{"__param_detect__": "username"}          ← 元数据行（第1行）
+{"remote_host": "...", "request_line": "..."}  ← 透传的全量数据
+{"remote_host": "...", "request_line": "..."}
+...
+```
+
+诊断信息输出到 stderr，不混入管道数据流。
+
+### 使用方法
+
+```bash
+# 基本用法
+cat parsed_logs.json | python3 2_param_detector.py
+
+# 自定义采样数量
+cat parsed_logs.json | python3 2_param_detector.py -n 50
+
+# 与管道串联（完整 AI 自动模式）
+cat access.log | python3 1_web_log_parser.py | python3 2_param_detector.py | python3 3_param_extractor.py
+```
+
+### 环境要求
+
+- 设置 `DEEPSEEK_API_KEY` 环境变量，或在项目根目录创建 `.env` 文件
+- 需要安装 `openai` 和 `pyyaml`：`pip install openai pyyaml`
+- 默认使用 DeepSeek API（`model: deepseek-v4-flash`，`base_url: https://api.deepseek.com`）
+
 ## 参数提取器 `3_param_extractor.py`
 
 ### 功能
@@ -110,56 +160,6 @@ cat access.log | python3 1_web_log_parser.py | python3 2_param_detector.py | pyt
 2. 使用正则表达式匹配查询字符串中的指定参数
 3. 提取参数值并与其他相关信息（状态码、响应大小、时间戳）一起输出
 4. 支持关键词过滤，提高处理效率
-
-## AI 参数检测器 `2_param_detector.py`
-
-### 功能
-
-通过 LLM（DeepSeek）自动识别日志中携带 SQL 注入 payload 的 URL 参数名，消除手动指定 `-p` 参数的需要。
-
-### 工作流程
-
-1. 全量读入 JSON 行数据
-2. 随机采样 100 条（可通过 `-n` 调整）
-3. 按 URL 路径聚合参数名及取值
-4. 构造 YAML 格式采样数据发送给 LLM
-5. LLM 返回注入参数名
-6. 输出元数据行 `{"__param_detect__": "param_name"}` + 透传全量数据
-
-### 输入格式
-
-- JSON 行格式的日志数据（1_web_log_parser.py 的输出）
-- 通过标准输入流(stdin)接收数据
-
-### 输出格式
-
-```
-{"__param_detect__": "username"}          ← 元数据行（第1行）
-{"remote_host": "...", "request_line": "..."}  ← 透传的全量数据
-{"remote_host": "...", "request_line": "..."}
-...
-```
-
-诊断信息输出到 stderr，不混入管道数据流。
-
-### 使用方法
-
-```bash
-# 基本用法
-cat parsed_logs.json | python3 2_param_detector.py
-
-# 自定义采样数量
-cat parsed_logs.json | python3 2_param_detector.py -n 50
-
-# 与管道串联（完整 AI 自动模式）
-cat access.log | python3 1_web_log_parser.py | python3 2_param_detector.py | python3 3_param_extractor.py
-```
-
-### 环境要求
-
-- 设置 `DEEPSEEK_API_KEY` 环境变量，或在项目根目录创建 `.env` 文件
-- 需要安装 `openai` 和 `pyyaml`：`pip install openai pyyaml`
-- 默认使用 DeepSeek API（`model: deepseek-v4-flash`，`base_url: https://api.deepseek.com`）
 
 ## 串联使用示例
 

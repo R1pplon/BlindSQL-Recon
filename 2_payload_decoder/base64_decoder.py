@@ -15,7 +15,7 @@ def decode(encoded_str):
     try:
         return base64.b64decode(encoded_str).decode('utf-8')
     except Exception:
-        return None
+        return encoded_str
 
 def main():
     for line in sys.stdin:

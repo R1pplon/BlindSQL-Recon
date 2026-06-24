@@ -157,18 +157,29 @@ response = client.chat.completions.create(
 4. 确认一个最有可能的注入点参数名称
 5. 仅返回该参数名称，不要返回任何其他内容
 6. 如果无法确定，返回 unknown
-7. 返回格式：纯文本，一行，不含引号、标记或解释
+7. 返回格式：用尖括号包裹参数名，仅返回 <参数名>，不返回任何额外内容
+    正确示例：
+        <username>
+        <query>
+        <unknown>
 ```
 
 ### 输出处理
 
 ```python
-param_name = response.choices[0].message.content.strip()
+raw_output = response.choices[0].message.content.strip()
 
-# 验证合法性
-if not param_name or not param_name.isalnum() or param_name == "unknown":
-    print("[ERROR] AI未能识别注入参数", file=sys.stderr)
-    sys.exit(1)
+# 尖括号格式提取
+match = re.search(r'<([\w-]+)>', raw_output)
+if match:
+    param_name = match.group(1).strip()
+    if param_name.lower() == "unknown":
+        print("[ERROR] AI未能识别注入参数", file=sys.stderr)
+        sys.exit(1)
+    print(f"[INFO] 检测到注入参数: {param_name}", file=sys.stderr)
+else:
+    # 格式不匹配，触发重试
+    print(f"[WARN] AI返回格式不正确: {raw_output[:100]}...", file=sys.stderr)
 ```
 
 ## 3_param_extractor.py 修改点
