@@ -7,6 +7,7 @@ SQLMap盲注分析器是一个专门用于分析SQLMap工具生成的盲注paylo
 ## 功能特性
 
 - 支持布尔盲注和时间盲注分析
+- 配置使用 YAML 格式
 - 可配置的触发模式和判断逻辑
 - 从payload中提取结构化信息
 - JSON行格式输入输出，易于集成到数据处理管道
@@ -17,8 +18,7 @@ SQLMap盲注分析器是一个专门用于分析SQLMap工具生成的盲注paylo
 ### 基本用法
 
 ```bash
-# 从标准输入读取数据，处理后将结果输出到标准输出
-cat input.jsonl | python sqlmap_analyzer.py --config config.json
+cat input.jsonl | python sqlmap_analyzer.py --config config.yaml
 ```
 
 ### 输入格式
@@ -53,21 +53,21 @@ cat input.jsonl | python sqlmap_analyzer.py --config config.json
 
 ## 配置文件详解
 
-配置文件采用JSON格式，用于定义分析器的行为和识别模式。以下是配置文件中各字段的详细说明：
+配置文件采用 YAML 格式，用于定义分析器的行为和识别模式。以下是配置文件中各字段的详细说明：
 
 ### 1. injection_type
 
 - **类型**: 字符串
 - **说明**: 指定注入类型，用于标识分析结果中的类型字段
-- **示例**: `"boolean"` 或 `"time"`
+- **示例**: `boolean` 或 `time`
 
 ### 2. trigger_pattern
 
 - **类型**: 字符串
 - **说明**: 用于识别payload是否为特定类型盲注的关键模式（不区分大小写）
 - **示例**:
-  - 布尔盲注: `"ORD(MID("`
-  - 时间盲注: `"SLEEP(1-(IF("`
+  - 布尔盲注: `ORD(MID(`
+  - 时间盲注: `SLEEP(1-(IF(`
 
 ### 3. judge_function
 
@@ -75,34 +75,31 @@ cat input.jsonl | python sqlmap_analyzer.py --config config.json
 - **说明**: 定义如何根据响应大小判断条件真假
 - **子字段**:
   - `type`: 判断类型，可选值:
-    - `"size_equal"`: 响应大小等于特定值
-    - `"size_less"`: 响应大小小于特定值
-    - `"size_greater"`: 响应大小大于特定值
-    - `"size_range"`: 响应大小在特定范围内
+    - `size_equal`: 响应大小等于特定值
+    - `size_less`: 响应大小小于特定值
+    - `size_greater`: 响应大小大于特定值
+    - `size_range`: 响应大小在特定范围内
   - `value`: 用于比较的值（适用于前三种类型）
   - `min`和`max`: 范围的最小值和最大值（仅适用于`size_range`类型）
 
 #### judge_function 示例
 
-```json
-// 布尔盲注：响应大小等于15表示条件为真
-"judge_function": {
-  "type": "size_equal",
-  "value": 15
-}
+```yaml
+# 布尔盲注：响应大小等于15表示条件为真
+judge_function:
+  type: size_equal
+  value: 15
 
-// 时间盲注：响应大小小于1406表示条件为真
-"judge_function": {
-  "type": "size_less",
-  "value": 1406
-}
+# 时间盲注：响应大小小于1406表示条件为真
+judge_function:
+  type: size_less
+  value: 1406
 
-// 范围判断：响应大小在1000到2000之间表示条件为真
-"judge_function": {
-  "type": "size_range",
-  "min": 1000,
-  "max": 2000
-}
+# 范围判断：响应大小在1000到2000之间表示条件为真
+judge_function:
+  type: size_range
+  min: 1000
+  max: 2000
 ```
 
 ### 4. patterns
@@ -164,106 +161,80 @@ cat input.jsonl | python sqlmap_analyzer.py --config config.json
 ### 步骤1: 确定注入类型
 
 根据要分析的盲注类型设置`injection_type`:
-
-- 布尔盲注: `"boolean"`
-- 时间盲注: `"time"`
+- 布尔盲注: `boolean`
+- 时间盲注: `time`
 
 ### 步骤2: 设置触发模式
 
 分析payload样本，找出能够唯一标识该类型注入的模式:
 
-```json
-"trigger_pattern": "ORD(MID("  // 布尔盲注
-"trigger_pattern": "SLEEP(1-(IF("  // 时间盲注
+```yaml
+trigger_pattern: ORD(MID(       # 布尔盲注
+trigger_pattern: SLEEP(1-(IF(   # 时间盲注
 ```
 
 ### 步骤3: 配置判断函数
 
 根据响应特征设置判断条件:
 
-```json
-// 布尔盲注：条件为真时响应大小固定
-"judge_function": {
-  "type": "size_equal",
-  "value": 15
-}
+```yaml
+# 布尔盲注：条件为真时响应大小固定
+judge_function:
+  type: size_equal
+  value: 15
 
-// 时间盲注：条件为真时响应较小
-"judge_function": {
-  "type": "size_less",
-  "value": 1406
-}
+# 时间盲注：条件为真时响应较小
+judge_function:
+  type: size_less
+  value: 1406
 ```
 
 ### 步骤4: 定义提取模式
 
 根据payload结构编写正则表达式模式:
 
-```json
-"patterns": {
-  "from_pattern": "FROM\\s+([\\w_]+)\\.([\\w_]+)",
-  "cast_pattern": "CAST\\(([\\w_]+)\\s+AS",
-  "limit_pattern": "LIMIT\\s+(\\d+),1",
-  "position_pattern": ",(\\d+),1\\)\\)",
-  "comparison_pattern": "\\)\\)\\s*([<>!]=?)\\s*(\\d+)"
-}
+```yaml
+patterns:
+  from_pattern: "FROM\\s+([\\w_]+)\\.([\\w_]+)"
+  cast_pattern: "CAST\\(([\\w_]+)\\s+AS"
+  limit_pattern: "LIMIT\\s+(\\d+),1"
+  position_pattern: ",(\\d+),1\\)\\)"
+  comparison_pattern: "\\)\\)\\s*([<>!]=?)\\s*(\\d+)"
 ```
 
 ### 完整配置示例
 
 #### 布尔盲注配置
 
-```json
-{
-  "injection_type": "boolean",
-  "trigger_pattern": "ORD(MID(",
-  "judge_function": {
-    "type": "size_equal",
-    "value": 15
-  },
-  "patterns": {
-    "from_pattern": "FROM\\s+([\\w_]+)\\.([\\w_]+)",
-    "cast_pattern": "CAST\\(([\\w_]+)\\s+AS",
-    "limit_pattern": "LIMIT\\s+(\\d+),1",
-    "position_pattern": ",(\\d+),1\\)\\)",
-    "comparison_pattern": "\\)\\)\\s*([<>!]=?)\\s*(\\d+)"
-  }
-}
+```yaml
+injection_type: boolean
+trigger_pattern: ORD(MID(
+judge_function:
+  type: size_equal
+  value: 15
+patterns:
+  from_pattern: "FROM\\s+([\\w_]+)\\.([\\w_]+)"
+  cast_pattern: "CAST\\(([\\w_]+)\\s+AS"
+  limit_pattern: "LIMIT\\s+(\\d+),1"
+  position_pattern: ",(\\d+),1\\)\\)"
+  comparison_pattern: "\\)\\)\\s*([<>!]=?)\\s*(\\d+)"
 ```
 
 #### 时间盲注配置
 
-```json
-{
-  "injection_type": "time",
-  "trigger_pattern": "SLEEP(1-(IF(",
-  "judge_function": {
-    "type": "size_less",
-    "value": 1406
-  },
-  "patterns": {
-    "from_pattern": "FROM\\s+([\\w_]+)\\.([\\w_]+)",
-    "cast_pattern": "CAST\\(([\\w_]+)\\s+AS",
-    "limit_pattern": "LIMIT\\s+(\\d+),1",
-    "position_pattern": ",(\\d+),1\\)\\)",
-    "comparison_pattern": "\\)\\)\\s*([<>!]=?)\\s*(\\d+)"
-  }
-}
+```yaml
+injection_type: time
+trigger_pattern: SLEEP(1-(IF(
+judge_function:
+  type: size_less
+  value: 1406
+patterns:
+  from_pattern: "FROM\\s+([\\w_]+)\\.([\\w_]+)"
+  cast_pattern: "CAST\\(([\\w_]+)\\s+AS"
+  limit_pattern: "LIMIT\\s+(\\d+),1"
+  position_pattern: ",(\\d+),1\\)\\)"
+  comparison_pattern: "\\)\\)\\s*([<>!]=?)\\s*(\\d+)"
 ```
-
-## 高级用法
-
-### 处理多种注入类型
-
-要同时处理多种注入类型，可以创建多个配置并分别运行分析器，或者修改代码以支持多配置同时分析。
-
-### 自定义正则表达式
-
-如果payload结构发生变化，可能需要调整正则表达式模式。确保模式能够正确捕获所需信息，并使用在线正则表达式测试工具进行验证。
-
-### 错误处理
-
-分析器会捕获并输出处理过程中遇到的错误，便于调试配置问题或数据格式问题。
 
 ## 注意事项
 
@@ -271,14 +242,4 @@ cat input.jsonl | python sqlmap_analyzer.py --config config.json
 2. 触发模式应尽可能唯一，避免误匹配
 3. 判断函数的值应根据实际测试数据调整
 4. 分析器只对包含触发模式的payload进行深度分析
-
-## 故障排除
-
-如果分析结果不符合预期，请检查:
-
-1. 触发模式是否匹配payload
-2. 正则表达式是否能正确提取信息
-3. 判断函数的类型和值是否设置正确
-4. 输入数据格式是否符合要求
-
-通过合理配置，SQLMap盲注分析器可以有效地从SQLMap生成的盲注payload中提取结构化信息，帮助安全研究人员更好地理解和分析SQL注入攻击。
+5. 需要安装 PyYAML：`pip install pyyaml`

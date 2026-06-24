@@ -1,0 +1,100 @@
+============================================================
+SQL盲注攻击分析报告
+============================================================
+
+[+] 目标数据库: INFORMATION_SCHEMA
+
+[+] 被攻击的表:
+    - SCHEMATA
+    - TABLES
+    - COLUMNS
+    - USERS
+
+[+] 发现的列结构:
+    INFORMATION_SCHEMA.SCHEMATA:
+      - SCHEMA_NAME
+    INFORMATION_SCHEMA.TABLES:
+      - TABLE_NAME
+    INFORMATION_SCHEMA.COLUMNS:
+      - COLUMN_NAME
+      - COLUMN_TYPE
+    TEST_SQL.USERS:
+      - EMAIL
+      - ID
+      - PASSWORD
+      - USERNAME
+
+[+] 被盗数据:
+
+表 SCHEMATA.SCHEMA_NAME:
+  记录 1: information_schema
+  记录 2: blog
+  记录 3: blog_db
+  记录 4: blog_test
+  记录 5: mysql
+  记录 6: performance_schema
+  记录 7: qos
+  记录 8: sky_take_out
+  记录 9: sys
+  记录 10: test_sql
+  记录 11: todolist
+
+表 TABLES.TABLE_NAME:
+  记录 1: users
+
+表 COLUMNS.COLUMN_NAME:
+  记录 1: id
+  记录 2: username
+  记录 3: password
+  记录 4: email
+
+表 COLUMNS.COLUMN_TYPE:
+  记录 1: 0
+
+表 USERS.EMAIL:
+  记录 1: admin@example.com
+  记录 2: john@mail.com
+  记录 3: jane@work.org
+  记录 4: test@test.test
+  记录 5: demo@demo.demo
+  记录 6: alice@wonder.land
+  记录 7: bob@build.it
+  记录 8: charlie@factory.com
+  记录 9: diana@themyscira.org
+  记录 10: peter@dailybugle.net
+
+表 USERS.ID:
+  记录 1: 1
+  记录 2: 2
+  记录 3: 3
+  记录 4: 4
+  记录 5: 5
+  记录 6: 6
+  记录 7: 7
+  记录 8: 8
+  记录 9: 9
+  记录 10: 10
+
+表 USERS.PASSWORD:
+  记录 1: 5d7845ac6ee7cfffafc5fe5f35cf666d
+  记录 2: 7c6a180b36896a0a8c02787eeafb0e4c
+  记录 3: 0d107d09f5bbe40cade3de5c71e9e9b7
+  记录 4: 179ad45c6ce2cb97cf1029e212046e81
+  记录 5: 6e9bece1914809fb8493146417e722f6
+  记录 6: 4cecaff2b30bbe75ce7322109164cfb5
+  记录 7: 285fbe7245c1d922f146f614ab3864c6
+  记录 8: c378985d629e99a4e86213db0cd5e70d
+  记录 9: 5300ee96dd08ec22708da7c6fae2bb0d
+  记录 10: 9ff1a119c14898c3fe71ad9d616d6e12
+
+表 USERS.USERNAME:
+  记录 1: admin
+  记录 2: john_doe
+  记录 3: jane_smith
+  记录 4: test_user
+  记录 5: demo
+  记录 6: alice
+  记录 7: bob
+  记录 8: charlie
+  记录 9: diana
+  记录 10: peter

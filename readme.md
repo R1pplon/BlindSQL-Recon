@@ -42,6 +42,13 @@
 ### 环境要求
 
 - Python 3.6+
+- PyYAML
+
+安装 PyYAML：
+
+```bash
+pip install pyyaml
+```
 
 ### 获取项目
 
@@ -54,20 +61,36 @@ cd BlindSQL-Recon
 
 ### 基本使用流程
 
+**布尔盲注（Boolean-based）示例：**
+
 ```bash
-cat .\log_example\time_access.log | \
-python .\1_log_parser\1_web_log_parser.py | \
-python .\1_log_parser\2_param_extractor.py -p query | \
-python .\2_payload_decoder\url_decoder.py | \
-python .\2_payload_decoder\base64_decoder.py | \
-python .\3_payload_analyzer\sqlmap_analyzer.py --config .\3_payload_analyzer\config\time_config.json | \
-python .\4_data_reconstructor\default_data_reconstructor.py | \
-python .\5_report_generator\default_report_generator.py -o csv
+cat ./log_example/bool_access.log | \
+python ./1_log_parser/1_web_log_parser.py | \
+python ./1_log_parser/2_param_extractor.py -p username | \
+python ./2_payload_decoder/url_decoder.py | \
+python ./3_payload_analyzer/sqlmap_analyzer.py --config ./3_payload_analyzer/config/test_boolean_config.yaml | \
+python ./4_data_reconstructor/default_data_reconstructor.py | \
+python ./5_report_generator/default_report_generator.py -o txt
 ```
 
-**2_param_extractor.py** 需要 `-p` 参数，指定需要提取的参数名称
-**3_payload_analyzer.py** 需要 `--config` 参数，指定分析配置文件
-**config.json** 配置文件需要手动分析 payload 提取特点
+**时间盲注（Time-based）示例：**
+
+```bash
+cat ./log_example/time_access.log | \
+python ./1_log_parser/1_web_log_parser.py | \
+python ./1_log_parser/2_param_extractor.py -p query | \
+python ./2_payload_decoder/url_decoder.py | \
+python ./2_payload_decoder/base64_decoder.py | \
+python ./3_payload_analyzer/sqlmap_analyzer.py --config ./3_payload_analyzer/config/test_time_config.yaml | \
+python ./4_data_reconstructor/default_data_reconstructor.py | \
+python ./5_report_generator/default_report_generator.py -o csv
+```
+
+**2_param_extractor.py** 需要 `-p` 参数，指定需要提取的参数名称。不同日志使用的参数名不同（如 `username`、`query`、`id` 等），需根据实际日志确定。
+
+**3_payload_analyzer.py**（实际文件名为 `sqlmap_analyzer.py`）需要 `--config` 参数，指定 YAML 格式的配置文件。
+
+> **注意**：`base64_decoder.py` 仅在 payload 实际经过 Base64 编码时才需要加入管道。
 
 ## 各模块功能说明
 
@@ -99,26 +122,22 @@ python 2_param_extractor.py -p <parameter_name>
 
 ### 4. SQLMap 盲注分析器 `sqlmap_analyzer.py`
 
-核心分析模块，使用可配置规则识别和解析盲注攻击模式。
+核心分析模块，使用可配置规则识别和解析盲注攻击模式。配置使用 YAML 格式。
 
-配置文件示例 `time_config.json`:
+配置文件示例 `test_boolean_config.yaml`:
 
-```json
-{
-  "injection_type": "boolean",
-  "trigger_pattern": "ORD(MID(",
-  "judge_function": {
-    "type": "size_equal",
-    "value": 15
-  },
-  "patterns": {
-    "from_pattern": "FROM\\s+([\\w_]+)\\.([\\w_]+)",
-    "cast_pattern": "CAST\\(([\\w_]+)\\s+AS",
-    "limit_pattern": "LIMIT\\s+(\\d+),1",
-    "position_pattern": ",(\\d+),1\\)\\)",
-    "comparison_pattern": "\\)\\)\\s*([<>!]=?)\\s*(\\d+)"
-  }
-}
+```yaml
+injection_type: boolean
+trigger_pattern: ORD(MID(
+judge_function:
+  type: size_equal
+  value: 15
+patterns:
+  from_pattern: "FROM\\s+([\\w_]+)\\.([\\w_]+)"
+  cast_pattern: "CAST\\(([\\w_]+)\\s+AS"
+  limit_pattern: "LIMIT\\s+(\\d+),1"
+  position_pattern: ",(\\d+),1\\)\\)"
+  comparison_pattern: "\\)\\)\\s*([<>!]=?)\\s*(\\d+)"
 ```
 
 ### 5. 数据重构器 `default_data_reconstructor.py`
@@ -144,7 +163,7 @@ python default_report_generator.py -o [json|csv|txt|all]
 
 ### 分析器配置
 
-分析器的行为由 JSON 配置文件定义，主要包含以下部分：
+分析器的行为由 YAML 配置文件定义，主要包含以下部分：
 
 - **injection_type**: 盲注类型（boolean/time）
 - **trigger_pattern**: 识别盲注载荷的关键模式
@@ -157,11 +176,15 @@ python default_report_generator.py -o [json|csv|txt|all]
 
 ### 自定义配置
 
-根据实际应用场景，可以创建自定义配置文件：
+配置模板见 `./3_payload_analyzer/config/analyzer_config.yaml`，可根据实际应用场景进行自定义：
 
-1. 分析应用的正常响应特征
-2. 确定盲注判断条件
-3. 根据攻击模式调整正则表达式
+1. 分析应用的正常响应特征，确定 TRUE/FALSE 响应体大小阈值
+2. 设置 `judge_function` 的 type 和 value
+3. 若攻击者 payload 格式与 SQLMap 默认不同，调整 patterns 中的正则表达式
+
+预置配置文件：
+- `test_boolean_config.yaml` — 布尔盲注分析配置
+- `test_time_config.yaml` — 时间盲注分析配置
 
 ## 输出示例
 

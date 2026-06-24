@@ -10,6 +10,7 @@ import sys
 import json
 import re
 import argparse
+import yaml
 from typing import Dict, Any, Callable, Optional
 
 # 配置类 - 存储分析器的配置
@@ -123,10 +124,10 @@ def create_judge_function(judge_config: Dict[str, Any]) -> Callable[[int], bool]
         return lambda size: False
 
 def load_config(config_path: str) -> BlindAnalysisConfig:
-    """从外部配置文件加载配置"""
+    """从YAML配置文件加载配置"""
     try:
         with open(config_path, 'r') as f:
-            config_data = json.load(f)
+            config_data = yaml.safe_load(f)
         
         # 创建判断函数
         judge_function = create_judge_function(config_data.get('judge_function', {}))
@@ -148,7 +149,7 @@ def load_config(config_path: str) -> BlindAnalysisConfig:
 def main():
     parser = argparse.ArgumentParser(description='SQLMap盲注分析器')
     parser.add_argument('--config', required=True, type=str, 
-                       help='外部配置文件路径(JSON格式)')
+                       help='外部配置文件路径(YAML格式)')
     args = parser.parse_args()
     
     # 从外部配置文件加载配置
