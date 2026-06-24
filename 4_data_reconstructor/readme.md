@@ -26,7 +26,7 @@ cat analysis_results.jsonl | python default_data_reconstructor.py
 # 完整的 SQL 盲注分析管道
 cat access.log | \
 python 1_web_log_parser.py | \
-python 2_param_extractor.py -p query | \
+python 3_param_extractor.py -p query | \
 python url_decoder.py | \
 python base64_decoder.py | \
 python sqlmap_analyzer.py --config config.json | \

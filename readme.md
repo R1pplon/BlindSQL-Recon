@@ -29,6 +29,9 @@
 
 ```
 ├─1_log_parser/          # 日志解析模块
+│  ├─1_web_log_parser.py     # Web日志格式解析
+│  ├─2_param_detector.py     # AI参数检测器（LLM自动识别注入参数）
+│  ├─3_param_extractor.py    # 参数提取（支持AI自动检测）
 ├─2_payload_decoder/     # 载荷解码模块
 ├─3_payload_analyzer/    # 载荷分析模块
 │  └─config/             # 分析配置文件
@@ -43,12 +46,23 @@
 
 - Python 3.6+
 - PyYAML
+- openai (AI参数检测需要)
 
-安装 PyYAML：
+安装依赖：
 
 ```bash
-pip install pyyaml
+pip install pyyaml openai
 ```
+
+### 配置 AI 参数检测（可选）
+
+如需使用 AI 自动检测注入参数，在项目根目录创建 `.env` 文件：
+
+```bash
+DEEPSEEK_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+支持所有与 OpenAI SDK 兼容的 API（DeepSeek、OpenAI 等），可在 `2_param_detector.py:86` 修改 `base_url` 和 `model`。
 
 ### 获取项目
 
@@ -61,24 +75,38 @@ cd BlindSQL-Recon
 
 ### 基本使用流程
 
-**布尔盲注（Boolean-based）示例：**
+**方式一：AI 自动检测参数（推荐，无需人工指定参数名）**
 
 ```bash
 cat ./log_example/bool_access.log | \
 python ./1_log_parser/1_web_log_parser.py | \
-python ./1_log_parser/2_param_extractor.py -p username | \
+python ./1_log_parser/2_param_detector.py | \
+python ./1_log_parser/3_param_extractor.py | \
 python ./2_payload_decoder/url_decoder.py | \
 python ./3_payload_analyzer/sqlmap_analyzer.py --config ./3_payload_analyzer/config/test_boolean_config.yaml | \
 python ./4_data_reconstructor/default_data_reconstructor.py | \
 python ./5_report_generator/default_report_generator.py -o txt
 ```
 
-**时间盲注（Time-based）示例：**
+**方式二：手动指定参数**
+
+```bash
+cat ./log_example/bool_access.log | \
+python ./1_log_parser/1_web_log_parser.py | \
+python ./1_log_parser/3_param_extractor.py -p username | \
+python ./2_payload_decoder/url_decoder.py | \
+python ./3_payload_analyzer/sqlmap_analyzer.py --config ./3_payload_analyzer/config/test_boolean_config.yaml | \
+python ./4_data_reconstructor/default_data_reconstructor.py | \
+python ./5_report_generator/default_report_generator.py -o txt
+```
+
+**时间盲注（Time-based）示例（AI自动检测）：**
 
 ```bash
 cat ./log_example/time_access.log | \
 python ./1_log_parser/1_web_log_parser.py | \
-python ./1_log_parser/2_param_extractor.py -p query | \
+python ./1_log_parser/2_param_detector.py | \
+python ./1_log_parser/3_param_extractor.py | \
 python ./2_payload_decoder/url_decoder.py | \
 python ./2_payload_decoder/base64_decoder.py | \
 python ./3_payload_analyzer/sqlmap_analyzer.py --config ./3_payload_analyzer/config/test_time_config.yaml | \
@@ -86,7 +114,9 @@ python ./4_data_reconstructor/default_data_reconstructor.py | \
 python ./5_report_generator/default_report_generator.py -o csv
 ```
 
-**2_param_extractor.py** 需要 `-p` 参数，指定需要提取的参数名称。不同日志使用的参数名不同（如 `username`、`query`、`id` 等），需根据实际日志确定。
+**3_param_extractor.py** 支持两种参数传入方式：
+- **AI 自动检测**（推荐）：由 `2_param_detector.py` 通过 LLM 分析采样日志，自动识别注入参数名
+- **手动指定**：`-p <参数名>` 明确指定（优先级高于 AI 检测）
 
 **3_payload_analyzer.py**（实际文件名为 `sqlmap_analyzer.py`）需要 `--config` 参数，指定 YAML 格式的配置文件。
 
@@ -103,24 +133,44 @@ python ./5_report_generator/default_report_generator.py -o csv
 - **通用日志格式**：`remote_host remote_logname remote_user [timestamp] "request_line" status_code response_size`
 - **组合日志格式**：添加了 `Referer` 和 `User-Agent` 字段
 
-### 2. 参数提取器 `2_param_extractor.py`
+### 2. AI 参数检测器 `2_param_detector.py`
 
-从结构化日志中提取特定参数，过滤出潜在的恶意请求。
+通过 LLM（DeepSeek）自动识别日志中携带 SQL 注入 payload 的 URL 参数名。流程：
+
+1. 全量读入 JSON 行数据
+2. 随机采样 100 条
+3. 按 URL 路径聚合参数名及取值
+4. 构造 YAML 格式采样数据发送给 LLM
+5. LLM 返回注入参数名
+6. 输出元数据行 + 透传全量数据
+
+需要设置 `DEEPSEEK_API_KEY` 环境变量或 `.env` 文件。
+
+### 3. 参数提取器 `3_param_extractor.py`
+
+从结构化日志中提取特定参数，过滤出潜在的恶意请求。支持两种参数来源：
+
+- **AI 自动检测**（默认）：接收 `2_param_detector.py` 的检测结果，无需手动指定参数
+- **手动指定**：`-p <参数名>` 明确指定（会覆盖 AI 检测结果）
 
 使用方法：
 
 ```bash
-python 2_param_extractor.py -p <parameter_name>
+# AI 模式（配合 2_param_detector.py）
+... | python 2_param_detector.py | python 3_param_extractor.py
+
+# 手动模式
+python 3_param_extractor.py -p <parameter_name>
 ```
 
-### 3. 载荷解码器 `url_decoder.py`, `base64_decoder.py`
+### 4. 载荷解码器 `url_decoder.py`, `base64_decoder.py`
 
 对提取的载荷进行多层解码，还原攻击者的原始输入：
 
 - URL 解码：处理 `%20` 等编码字符
 - Base64 解码：处理 Base64 编码的载荷
 
-### 4. SQLMap 盲注分析器 `sqlmap_analyzer.py`
+### 5. SQLMap 盲注分析器 `sqlmap_analyzer.py`
 
 核心分析模块，使用可配置规则识别和解析盲注攻击模式。配置使用 YAML 格式。
 
@@ -140,11 +190,11 @@ patterns:
   comparison_pattern: "\\)\\)\\s*([<>!]=?)\\s*(\\d+)"
 ```
 
-### 5. 数据重构器 `default_data_reconstructor.py`
+### 6. 数据重构器 `default_data_reconstructor.py`
 
 将分散在多次请求中的碎片化信息拼凑成完整数据，通过模拟二分查找算法重构原始字符。
 
-### 6. 报告生成器 `default_report_generator.py`
+### 7. 报告生成器 `default_report_generator.py`
 
 生成多种格式的分析报告，包括：
 

@@ -61,7 +61,7 @@
 grep -oP '\?[^&\s]+' log_example/bool_access.log | sort -u
 
 # 使用正确的参数名
-... | 2_param_extractor.py -p username | ...
+... | 3_param_extractor.py -p username | ...
 ```
 
 ### 3.2 陷阱二：base64_decoder 导致数据丢失（关键！）
@@ -92,7 +92,7 @@ grep -oP '\?[^&\s]+' log_example/bool_access.log | sort -u
 ```bash
 cat ./log_example/bool_access.log \
   | python3 ./1_log_parser/1_web_log_parser.py \
-  | python3 ./1_log_parser/2_param_extractor.py -p username \
+  | python3 ./1_log_parser/3_param_extractor.py -p username \
   | python3 ./2_payload_decoder/url_decoder.py \
   | python3 ./3_payload_analyzer/sqlmap_analyzer.py \
       --config ./3_payload_analyzer/config/test_boolean_config.json \
@@ -140,7 +140,7 @@ cat ./log_example/bool_access.log \
 cat access.log | python3 1_web_log_parser.py | head -5
 
 # 2. 确认参数提取正确
-cat access.log | python3 1_web_log_parser.py | python3 2_param_extractor.py -p <param> | head -5
+cat access.log | python3 1_web_log_parser.py | python3 3_param_extractor.py -p <param> | head -5
 ```
 
 ### 第二阶段：验证解码链路
