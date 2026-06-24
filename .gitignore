@@ -2,3 +2,5 @@ result/
 .env
 AGENTS.md
 test*
+__pycache__
+ai_generated_*
