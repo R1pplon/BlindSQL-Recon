@@ -34,7 +34,9 @@
 │  ├─3_param_extractor.py    # 参数提取（支持AI自动检测）
 ├─2_payload_decoder/     # 载荷解码模块
 ├─3_payload_analyzer/    # 载荷分析模块
-│  └─config/             # 分析配置文件
+│  ├─ai_config_generator.py  # AI配置生成器（LLM自动生成分析器配置）
+│  ├─sqlmap_analyzer.py      # SQLMap盲注分析器
+│  └─config/                 # 分析配置文件
 ├─4_data_reconstructor/  # 数据重构模块
 ├─5_report_generator/    # 报告生成模块
 └─log_example/           # 示例日志文件
@@ -75,7 +77,7 @@ cd BlindSQL-Recon
 
 ### 基本使用流程
 
-**方式一：AI 自动检测参数（推荐，无需人工指定参数名）**
+**方式一：AI 全自动（推荐，无需任何人工介入）**
 
 ```bash
 cat ./log_example/bool_access.log | \
@@ -83,12 +85,13 @@ python ./1_log_parser/1_web_log_parser.py | \
 python ./1_log_parser/2_param_detector.py | \
 python ./1_log_parser/3_param_extractor.py | \
 python ./2_payload_decoder/url_decoder.py | \
-python ./3_payload_analyzer/sqlmap_analyzer.py --config ./3_payload_analyzer/config/test_boolean_config.yaml | \
+python ./3_payload_analyzer/ai_config_generator.py | \
+python ./3_payload_analyzer/sqlmap_analyzer.py --config auto | \
 python ./4_data_reconstructor/default_data_reconstructor.py | \
 python ./5_report_generator/default_report_generator.py -o txt
 ```
 
-**方式二：手动指定参数**
+**方式二：手动指定参数 + 手动配置**
 
 ```bash
 cat ./log_example/bool_access.log | \
@@ -100,7 +103,7 @@ python ./4_data_reconstructor/default_data_reconstructor.py | \
 python ./5_report_generator/default_report_generator.py -o txt
 ```
 
-**时间盲注（Time-based）示例（AI自动检测）：**
+**时间盲注（Time-based）示例（AI全自动）：**
 
 ```bash
 cat ./log_example/time_access.log | \
@@ -109,7 +112,8 @@ python ./1_log_parser/2_param_detector.py | \
 python ./1_log_parser/3_param_extractor.py | \
 python ./2_payload_decoder/url_decoder.py | \
 python ./2_payload_decoder/base64_decoder.py | \
-python ./3_payload_analyzer/sqlmap_analyzer.py --config ./3_payload_analyzer/config/test_time_config.yaml | \
+python ./3_payload_analyzer/ai_config_generator.py | \
+python ./3_payload_analyzer/sqlmap_analyzer.py --config auto | \
 python ./4_data_reconstructor/default_data_reconstructor.py | \
 python ./5_report_generator/default_report_generator.py -o csv
 ```
@@ -118,7 +122,9 @@ python ./5_report_generator/default_report_generator.py -o csv
 - **AI 自动检测**（推荐）：由 `2_param_detector.py` 通过 LLM 分析采样日志，自动识别注入参数名
 - **手动指定**：`-p <参数名>` 明确指定（优先级高于 AI 检测）
 
-**3_payload_analyzer.py**（实际文件名为 `sqlmap_analyzer.py`）需要 `--config` 参数，指定 YAML 格式的配置文件。
+**sqlmap_analyzer.py** 支持两种配置方式：
+- **AI 自动生成**（推荐）：`--config auto`，由 `ai_config_generator.py` 通过 LLM 分析 payload 样本，自动生成分析器 YAML 配置
+- **手动指定**：`--config <path>`，使用预置或手写的 YAML 配置文件
 
 > **注意**：`base64_decoder.py` 仅在 payload 实际经过 Base64 编码时才需要加入管道。
 
@@ -170,9 +176,30 @@ python 3_param_extractor.py -p <parameter_name>
 - URL 解码：处理 `%20` 等编码字符
 - Base64 解码：处理 Base64 编码的载荷
 
-### 5. SQLMap 盲注分析器 `sqlmap_analyzer.py`
+### 5. AI 配置生成器 `ai_config_generator.py`
+
+通过 LLM（DeepSeek）自动生成 `sqlmap_analyzer.py` 所需的 YAML 配置文件，消除人工编写正则和阈值配置的需求。
+
+三步流程：
+1. **特征提取**：响应大小聚类、注入类型推断、结构去重、多样化采样
+2. **语义转换**：特征摘要 → LLM → YAML 配置
+3. **闭环校验**：5 级验证链（语法 → 正则编译 → 匹配率 → 提取完备性 → ASCII 有效性）
+
+校验通过后，配置保存到 `3_payload_analyzer/config/ai_generated_<ts>.yaml`，失败时支持最多 3 次重试（带错误反馈），全部失败则降级为模板配置。
+
+使用方法：
+```bash
+# 配合 --config auto 模式
+... | python ai_config_generator.py | python sqlmap_analyzer.py --config auto
+```
+
+### 6. SQLMap 盲注分析器 `sqlmap_analyzer.py`
 
 核心分析模块，使用可配置规则识别和解析盲注攻击模式。配置使用 YAML 格式。
+
+支持两种配置来源：
+- **AI 自动生成**：`--config auto`（配合 `ai_config_generator.py`）
+- **手动指定**：`--config <path>`（使用预置或手写 YAML）
 
 配置文件示例 `test_boolean_config.yaml`:
 
@@ -190,11 +217,11 @@ patterns:
   comparison_pattern: "\\)\\)\\s*([<>!]=?)\\s*(\\d+)"
 ```
 
-### 6. 数据重构器 `default_data_reconstructor.py`
+### 7. 数据重构器 `default_data_reconstructor.py`
 
 将分散在多次请求中的碎片化信息拼凑成完整数据，通过模拟二分查找算法重构原始字符。
 
-### 7. 报告生成器 `default_report_generator.py`
+### 8. 报告生成器 `default_report_generator.py`
 
 生成多种格式的分析报告，包括：
 

@@ -9,6 +9,7 @@ SQLMap盲注分析器 - 统一版本
 import sys
 import json
 import re
+import os
 import argparse
 import yaml
 from typing import Dict, Any, Callable, Optional
@@ -148,16 +149,29 @@ def load_config(config_path: str) -> BlindAnalysisConfig:
 
 def main():
     parser = argparse.ArgumentParser(description='SQLMap盲注分析器')
-    parser.add_argument('--config', required=True, type=str, 
-                       help='外部配置文件路径(YAML格式)')
+    parser.add_argument('--config', required=True, type=str,
+                       help='配置文件路径(YAML) 或 "auto"(从AI生成器读取)')
     args = parser.parse_args()
-    
-    # 从外部配置文件加载配置
-    config = load_config(args.config)
-    
+
+    if args.config == 'auto':
+        first_line = sys.stdin.readline().strip()
+        try:
+            meta = json.loads(first_line)
+            config_path = meta.get('__ai_config__')
+            if not config_path or not os.path.exists(config_path):
+                print(f"Error: AI 配置文件未找到: {config_path}", file=sys.stderr)
+                sys.exit(1)
+            config = load_config(config_path)
+            print(f"[INFO] 使用AI生成配置: {config_path}", file=sys.stderr)
+        except (json.JSONDecodeError, KeyError) as e:
+            print(f"Error: AI 元数据解析失败: {e}", file=sys.stderr)
+            sys.exit(1)
+    else:
+        config = load_config(args.config)
+
     # 创建分析器实例
     analyzer = SQLMapBlindAnalyzer(config)
-    
+
     # 处理输入
     for line in sys.stdin:
         result = analyzer.process_line(line)

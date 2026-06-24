@@ -8,6 +8,7 @@ SQLMap盲注分析器是一个专门用于分析SQLMap工具生成的盲注paylo
 
 - 支持布尔盲注和时间盲注分析
 - 配置使用 YAML 格式
+- **AI 自动配置生成**：`ai_config_generator.py` 通过 LLM 自动分析 payload 样本生成配置
 - 可配置的触发模式和判断逻辑
 - 从payload中提取结构化信息
 - JSON行格式输入输出，易于集成到数据处理管道
@@ -15,7 +16,14 @@ SQLMap盲注分析器是一个专门用于分析SQLMap工具生成的盲注paylo
 
 ## 使用方法
 
-### 基本用法
+### 基本用法（AI 自动配置，推荐）
+
+```bash
+# 先通过 ai_config_generator.py 生成配置，再自动分析
+cat input.jsonl | python ai_config_generator.py | python sqlmap_analyzer.py --config auto
+```
+
+### 基本用法（手动配置）
 
 ```bash
 cat input.jsonl | python sqlmap_analyzer.py --config config.yaml
